@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>정밀 MBTI 성격 유형 검사기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .progress-bar-fill {
+            transition: width 0.4s ease-in-out;
+        }
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between antialiased text-gray-800">
+
+    <!-- Header -->
+    <header class="w-full py-4 px-6 bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="resetTest()">
+                <span class="text-2xl">🧠</span>
+                <span class="font-extrabold text-xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">MBTI Insight</span>
+            </div>
+            <span class="text-xs bg-indigo-100 text-indigo-800 font-semibold px-2.5 py-1 rounded-full">정밀 진단</span>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow flex items-center justify-center p-4 md:p-8">
+        <div class="w-full max-w-2xl bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[500px] flex flex-col justify-between p-6 md:p-10">
+            
+            <!-- 1. Start View -->
+            <div id="start-view" class="flex flex-col items-center justify-center text-center my-auto space-y-8 py-6">
+                <div class="w-32 h-32 bg-indigo-50 rounded-full flex items-center justify-center animate-bounce shadow-inner">
+                    <span class="text-6xl">✨</span>
+                </div>
+                <div class="space-y-3">
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+                        나를 찾는 여행, <br class="md:hidden">MBTI 검사
+                    </h1>
+                    <p class="text-gray-500 max-w-md mx-auto leading-relaxed">
+                        내가 어떤 성향을 가지고 있는지, 타인과의 관계에서 어떤 모습을 보이는지 알아보세요. 약 3분 내외의 시간이 소요됩니다.
+                    </p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left max-w-md text-sm text-amber-800 space-y-1">
+                    <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 주의 사항</p>
+                    <p>• 깊게 생각하지 않고 직관적으로 '네' 혹은 '아니오'를 선택해 주세요.</p>
+                    <p>• 솔직하게 답변할수록 더 알맞은 성향 결과를 얻을 수 있습니다.</p>
+                </div>
+                <button onclick="startTest()" class="w-full max-w-xs py-4 px-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-2xl shadow-lg hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    검사 시작하기 <i class="fa-solid fa-chevron-right ml-2 text-sm"></i>
+                </button>
+            </div>
+
+            <!-- 2. Test/Question View (Hidden Initially) -->
+            <div id="test-view" class="hidden flex-col justify-between flex-grow">
+                <!-- Progress & Navigation -->
+                <div>
+                    <div class="flex justify-between items-center text-sm font-semibold text-gray-400 mb-2">
+                        <button onclick="prevQuestion()" id="prev-btn" class="hover:text-gray-700 disabled:opacity-30 disabled:hover:text-gray-400 flex items-center" disabled>
+                            <i class="fa-solid fa-chevron-left mr-1"></i> 이전
+                        </button>
+                        <span id="progress-text" class="text-indigo-600 font-bold">1 / 24</span>
+                    </div>
+                    <!-- Progress Bar Background -->
+                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-8">
+                        <!-- Progress Bar Fill -->
+                        <div id="progress-bar" class="progress-bar-fill bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0"></div>
+                    </div>
+                </div>
+
+                <!-- Question Text -->
+                <div class="my-auto py-6 space-y-6">
+                    <span class="inline-block text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider" id="question-category">성향 분석 질문</span>
+                    <h2 id="question-text" class="text-xl md:text-2xl font-bold text-gray-800 leading-snug">
+                        질문이 여기에 표시됩니다.
+                    </h2>
+                </div>
+
+                <!-- Answer Options (Fixed Order: Yes on Top, No on Bottom) -->
+                <div class="space-y-4 mt-6">
+                    <!-- Option 1 ("네" Button) -->
+                    <button id="option-1-btn" class="option-btn w-full p-5 text-left border-2 border-gray-100 hover:border-indigo-400 hover:bg-indigo-50/30 rounded-2xl font-medium text-gray-700 flex items-center justify-between group">
+                        <span id="option-1-text" class="pr-4 text-lg font-bold">네</span>
+                        <span class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-transparent bg-white group-hover:border-indigo-500 transition-colors shrink-0">
+                            <i class="fa-solid fa-check text-indigo-600 text-sm"></i>
+                        </span>
+                    </button>
+                    <!-- Option 2 ("아니오" Button) -->
+                    <button id="option-2-btn" class="option-btn w-full p-5 text-left border-2 border-gray-100 hover:border-indigo-400 hover:bg-indigo-50/30 rounded-2xl font-medium text-gray-700 flex items-center justify-between group">
+                        <span id="option-2-text" class="pr-4 text-lg font-bold">아니오</span>
+                        <span class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-transparent bg-white group-hover:border-indigo-500 transition-colors shrink-0">
+                            <i class="fa-solid fa-check text-indigo-600 text-sm"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Loading/Calculating View (Hidden Initially) -->
+            <div id="loading-view" class="hidden flex-col items-center justify-center text-center my-auto space-y-6 py-12">
+                <div class="relative w-20 h-20">
+                    <div class="absolute inset-0 rounded-full border-4 border-indigo-100"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin"></div>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="text-lg font-bold text-gray-900">당신의 성격을 분석하는 중...</h3>
+                    <p class="text-sm text-gray-400">데이터를 취합하여 성격 유형 결과표를 생성하고 있습니다.</p>
+                </div>
+            </div>
+
+            <!-- 4. Result View (Hidden Initially) -->
+            <div id="result-view" class="hidden flex-col space-y-8">
+                <!-- Result Header -->
+                <div class="text-center space-y-3">
+                    <span class="text-sm font-bold text-purple-600 tracking-wider uppercase">Your MBTI Type is</span>
+                    <h2 id="result-type" class="text-5xl md:text-6xl font-extrabold text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text tracking-wide">
+                        INFJ
+                    </h2>
+                    <p id="result-title" class="text-xl font-bold text-gray-700">선의의 옹호자, 현명한 조언자</p>
+                </div>
+
+                <!-- Dimensions Breakdown Bar Charts -->
+                <div class="bg-gray-50 rounded-2xl p-6 space-y-4">
+                    <h4 class="font-bold text-gray-700 text-sm mb-2"><i class="fa-solid fa-chart-bar mr-1"></i> 세부 성향 백분율</h4>
+                    
+                    <!-- E vs I -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold text-gray-500">
+                            <span>외향형 (E)</span>
+                            <span>내향형 (I)</span>
+                        </div>
+                        <div class="relative h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                            <div id="bar-e" class="h-full bg-orange-400 transition-all duration-1000" style="width: 50%"></div>
+                            <div id="bar-i" class="h-full bg-indigo-500 transition-all duration-1000" style="width: 50%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 font-medium">
+                            <span id="percent-e">50%</span>
+                            <span id="percent-i">50%</span>
+                        </div>
+                    </div>
+
+                    <!-- S vs N -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold text-gray-500">
+                            <span>감각형 (S)</span>
+                            <span>직관형 (N)</span>
+                        </div>
+                        <div class="relative h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                            <div id="bar-s" class="h-full bg-yellow-500 transition-all duration-1000" style="width: 50%"></div>
+                            <div id="bar-n" class="h-full bg-emerald-500 transition-all duration-1000" style="width: 50%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 font-medium">
+                            <span id="percent-s">50%</span>
+                            <span id="percent-n">50%</span>
+                        </div>
+                    </div>
+
+                    <!-- T vs F -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold text-gray-500">
+                            <span>사고형 (T)</span>
+                            <span>감정형 (F)</span>
+                        </div>
+                        <div class="relative h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                            <div id="bar-t" class="h-full bg-teal-500 transition-all duration-1000" style="width: 50%"></div>
+                            <div id="bar-f" class="h-full bg-rose-400 transition-all duration-1000" style="width: 50%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 font-medium">
+                            <span id="percent-t">50%</span>
+                            <span id="percent-f">50%</span>
+                        </div>
+                    </div>
+
+                    <!-- J vs P -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold text-gray-500">
+                            <span>판단형 (J)</span>
+                            <span>인식형 (P)</span>
+                        </div>
+                        <div class="relative h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                            <div id="bar-j" class="h-full bg-blue-500 transition-all duration-1000" style="width: 50%"></div>
+                            <div id="bar-p" class="h-full bg-violet-400 transition-all duration-1000" style="width: 50%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 font-medium">
+                            <span id="percent-j">50%</span>
+                            <span id="percent-p">50%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description Sections -->
+                <div class="space-y-6">
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-gray-900 border-l-4 border-indigo-500 pl-2">특징 요약</h4>
+                        <p id="result-desc" class="text-gray-600 text-sm leading-relaxed">
+                            성격 유형의 주요 설명이 들어갑니다.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-indigo-50/50 rounded-2xl p-4 space-y-1">
+                            <h5 class="font-bold text-indigo-900 text-sm"><i class="fa-solid fa-briefcase mr-1"></i> 추천 직무/직업</h5>
+                            <p id="result-jobs" class="text-gray-600 text-xs leading-relaxed">추천 직무 정보가 들어갑니다.</p>
+                        </div>
+                        <div class="bg-purple-50/50 rounded-2xl p-4 space-y-1">
+                            <h5 class="font-bold text-purple-900 text-sm"><i class="fa-solid fa-masks-theater mr-1"></i> 대표적 가상 캐릭터</h5>
+                            <p id="result-characters" class="text-gray-600 text-xs leading-relaxed">해당 유형을 대표하는 가상 또는 실존 인물이 들어갑니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Share & Restart Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">
+                    <button onclick="shareResult()" class="flex-1 py-3 px-6 bg-indigo-50 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-share-nodes"></i> 결과 공유하기
+                    </button>
+                    <button onclick="resetTest()" class="flex-1 py-3 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition flex items-center justify-center gap-2 shadow-md">
+                        <i class="fa-solid fa-rotate-left"></i> 테스트 다시 하기
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Custom Notification Toast -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900/95 backdrop-blur-sm text-white px-6 py-3 rounded-2xl shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2 text-sm font-semibold">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">메시지</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full py-6 text-center text-xs text-gray-400 border-t border-gray-200/50 bg-white/40">
+        <p>&copy; 2026 MBTI Insight. All rights reserved.</p>
+        <p class="mt-1">본 검사는 재미와 자아성찰의 참고 자료로 활용하시는 것을 추천합니다.</p>
+    </footer>
+
+    <!-- JS Logic -->
+    <script>
+        // MBTI Master Questions Database (24 Items)
+        // Option A always maps to 'Yes' (Agreeing with the statement)
+        // Option B always maps to 'No' (Disagreeing with the statement)
+        const masterQuestions = [
+            // E vs I
+            {
+                text: "새로운 사람들과 어울리는 모임이나 파티에서 에너지를 얻는 편인가요?",
+                dim: "EI",
+                options: {
+                    A: { text: "네", val: "E" },
+                    B: { text: "아니오", val: "I" }
+                }
+            },
+            {
+                text: "생각이 나면 말로 즉시 표현하기보다는, 완전히 머릿속으로 정리된 후에 말을 꺼내는 편인가요?",
+                dim: "EI",
+                options: {
+                    A: { text: "네", val: "I" },
+                    B: { text: "아니오", val: "E" }
+                }
+            },
+            {
+                text: "주말에 특별한 약속 없이 집에만 있으면 답답하거나 지루하다고 느껴지나요?",
+                dim: "EI",
+                options: {
+                    A: { text: "네", val: "E" },
+                    B: { text: "아니오", val: "I" }
+                }
+            },
+            {
+                text: "낯선 사람들 앞이나 주목받는 자리에서도 많이 긴장하지 않고 자신 있게 이야기할 수 있나요?",
+                dim: "EI",
+                options: {
+                    A: { text: "네", val: "E" },
+                    B: { text: "아니오", val: "I" }
+                }
+            },
+            {
+                text: "넓고 다양한 인적 네트워크를 만드는 것보다 소수의 깊이 있는 친구 관계를 선호하나요?",
+                dim: "EI",
+                options: {
+                    A: { text: "네", val: "I" },
+                    B: { text: "아니오", val: "E" }
+                }
+            },
+            {
+                text: "휴대전화 알림이 울리면 미루지 않고 바로 확인해서 답장을 해야 마음이 편한가요?",
+                dim: "EI",
+                options: {
+                    A: { text: "네", val: "E" },
+                    B: { text: "아니오", val: "I" }
+                }
+            },
+
+            // S vs N
+            {
+                text: "눈앞의 현실적인 해결안이나 사실보다, 미래의 가능성이나 상상력을 자극하는 아이디어에 더 마음이 끌리나요?",
+                dim: "SN",
+                options: {
+                    A: { text: "네", val: "N" },
+                    B: { text: "아니오", val: "S" }
+                }
+            },
+            {
+                text: "어떤 일을 시작할 때 이미 검증된 방식보다는, 새로운 시도와 창의적인 방식을 먼저 생각해보나요?",
+                dim: "SN",
+                options: {
+                    A: { text: "네", val: "N" },
+                    B: { text: "아니오", val: "S" }
+                }
+            },
+            {
+                text: "소설이나 영화를 볼 때 복잡한 세계관이나 은유적 의미보다, 인물들의 눈앞에 펼쳐지는 직접적인 스토리에 집중하나요?",
+                dim: "SN",
+                options: {
+                    A: { text: "네", val: "S" },
+                    B: { text: "아니오", val: "N" }
+                }
+            },
+            {
+                text: "일상생활 속에서 사소한 수치, 날짜, 장소 등 구체적인 디테일을 꼼꼼하게 잘 기억하는 편인가요?",
+                dim: "SN",
+                options: {
+                    A: { text: "네", val: "S" },
+                    B: { text: "아니오", val: "N" }
+                }
+            },
+            {
+                text: "다른 사람이 '만약 ~하면 어떨까?' 하는 엉뚱한 상상을 할 때, 흥미를 느끼고 신나게 같이 동참하는 편인가요?",
+                dim: "SN",
+                options: {
+                    A: { text: "네", val: "N" },
+                    B: { text: "아니오", val: "S" }
+                }
+            },
+            {
+                text: "현재 눈앞에 주어진 순간들을 즐기기보다, 앞으로 펼쳐질 장기적인 계획이나 미래의 모습을 상상할 때가 더 많나요?",
+                dim: "SN",
+                options: {
+                    A: { text: "네", val: "N" },
+                    B: { text: "아니오", val: "S" }
+                }
+            },
+
+            // T vs F
+            {
+                text: "친구가 힘든 고민을 털어놓았을 때, 따뜻한 위로보다 문제를 해결할 구체적이고 실질적인 방안을 먼저 생각하나요?",
+                dim: "TF",
+                options: {
+                    A: { text: "네", val: "T" },
+                    B: { text: "아니오", val: "F" }
+                }
+            },
+            {
+                text: "토론이나 대화 중 누군가 논리적으로 모순된 주장을 한다면, 서먹해지더라도 오류를 확실히 바로잡는 편인가요?",
+                dim: "TF",
+                options: {
+                    A: { text: "네", val: "T" },
+                    B: { text: "아니오", val: "F" }
+                }
+            },
+            {
+                text: "어떤 결정을 내려야 할 때 이성적인 논리성보다, 함께하는 사람들의 마음과 평화로운 조화를 더 우선시하나요?",
+                dim: "TF",
+                options: {
+                    A: { text: "네", val: "F" },
+                    B: { text: "아니오", val: "T" }
+                }
+            },
+            {
+                text: "정의롭고 공평한 결과를 만들기 위해 개개인의 사정보다는 정해진 규칙을 엄격하게 적용하는 것이 더 중요하다고 생각하나요?",
+                dim: "TF",
+                options: {
+                    A: { text: "네", val: "T" },
+                    B: { text: "아니오", val: "F" }
+                }
+            },
+            {
+                text: "평소 주위 사람들로부터 '감수성이 풍부하고 다른 사람의 감정에 마음 깊이 공감해 준다'는 이야기를 자주 듣나요?",
+                dim: "TF",
+                options: {
+                    A: { text: "네", val: "F" },
+                    B: { text: "아니오", val: "T" }
+                }
+            },
+            {
+                text: "완성된 결과물에 대한 칭찬을 들을 때보다, '네 덕분에 든든했고 힘이 되었어'라는 정서적 지지를 받을 때 더 기쁜가요?",
+                dim: "TF",
+                options: {
+                    A: { text: "네", val: "F" },
+                    B: { text: "아니오", val: "T" }
+                }
+            },
+
+            // J vs P
+            {
+                text: "여행을 떠나기 전에 방문할 장소나 구체적인 동선을 시간 단위로 철저하게 계획하고 출발하는 편인가요?",
+                dim: "JP",
+                options: {
+                    A: { text: "네", val: "J" },
+                    B: { text: "아니오", val: "P" }
+                }
+            },
+            {
+                text: "과제나 업무를 할 때 계획을 세워 미리 끝내기보다, 마감 직전에 임박해서 엄청난 몰입감으로 처리하는 편인가요?",
+                dim: "JP",
+                options: {
+                    A: { text: "네", val: "P" },
+                    B: { text: "아니오", val: "J" }
+                }
+            },
+            {
+                text: "내 방, 책상 등 자주 머무는 일상의 공간이 항상 규칙적이고 깔끔하게 잘 정리되어 있어야 집중이 잘 되나요?",
+                dim: "JP",
+                options: {
+                    A: { text: "네", val: "J" },
+                    B: { text: "아니오", val: "P" }
+                }
+            },
+            {
+                text: "미리 세워둔 일정이나 약속이 갑작스럽게 취소되거나 도중에 변경되면 스트레스를 많이 받는 편인가요?",
+                dim: "JP",
+                options: {
+                    A: { text: "네", val: "J" },
+                    B: { text: "아니오", val: "P" }
+                }
+            },
+            {
+                text: "유연하게 방향을 바꿀 수 있는 자유로운 분위기보다, 명확한 규칙과 지침이 갖춰진 체계적인 환경에서 일하는 것을 좋아하나요?",
+                dim: "JP",
+                options: {
+                    A: { text: "네", val: "J" },
+                    B: { text: "아니오", val: "P" }
+                }
+            },
+            {
+                text: "해야 할 일 목록(To-Do List)을 적어두고, 해결한 항목들을 하나씩 지워나갈 때 짜릿한 성취감을 느끼나요?",
+                dim: "JP",
+                options: {
+                    A: { text: "네", val: "J" },
+                    B: { text: "아니오", val: "P" }
+                }
+            }
+        ];
+
+        // MBTI Result Explanations Database
+        const mbtiData = {
+            "ISTJ": {
+                title: "청렴결백한 공직자, 현실주의자",
+                desc: "사실에 근거하여 사고하며 한 치의 의심도 허용하지 않는 철두철미한 성격입니다. 맡은 바 책임을 다하며, 약속을 반드시 지킵니다. 신뢰성이 높고 구조화된 환경에서 최고의 효율을 냅니다.",
+                jobs: "공무원, 회계사, 경찰, 시스템 엔지니어, 물류 관리사",
+                characters: "스타크래프트의 '아르타니스', 겨울왕국의 '엘사'"
+            },
+            "ISFJ": {
+                title: "용감한 수호자, 헌신적인 조력자",
+                desc: "조용하고 차분하며 따뜻하고 친근합니다. 타인을 보호하고 돕는 데 큰 보람을 느끼며, 꼼꼼하고 기억력이 좋습니다. 주변 사람들을 조용히 챙겨주는 세심한 성격의 소유자입니다.",
+                jobs: "간호사, 유치원 교사, 사회복지사, 인사 담당자, 도서관 사서",
+                characters: "캡틴 아메리카 (스티브 로저스), 반지의 제왕의 '샘와이즈 감지'"
+            },
+            "INFJ": {
+                title: "선의의 옹호자, 예언자형",
+                desc: "가장 흔치 않은 성격 유형으로, 강한 직관력과 확고한 가치관을 가지고 있습니다. 차분하지만 열정적이며, 더 나은 세상을 만들고자 하는 깊은 신념을 지니고 있습니다. 타인의 마음을 꿰뚫어 보는 통찰력이 탁월합니다.",
+                jobs: "상담 심리사, 작가, 예술 치료사, 인사 기획자, 비영리 단체 활동가",
+                characters: "해리 포터의 '알버스 덤블도어', 스타워즈의 '요다'"
+            },
+            "INTJ": {
+                title: "용의주도한 전략가, 과학자형",
+                desc: "상상력이 풍부하면서도 결단력이 있으며, 야망이 있지만 겉으로 드러내지 않습니다. 지적 호기심이 매우 높으며, 체계적이고 논리적인 전략 수립에 특출난 재능을 발휘합니다. 독립적이고 합리적입니다.",
+                jobs: "투자 분석가, 소프트웨어 아키텍트, 과학자, 전략 기획가, 교수",
+                characters: "셜록 홈즈, 다크나이트의 '배트맨'"
+            },
+            "ISTP": {
+                title: "만능 재주꾼, 장인형",
+                desc: "대담하고 현실적인 성격으로 모든 종류의 도구를 자유자재로 다루는 능력이 있습니다. 과묵하지만 호기심이 많고 관찰력이 뛰어나며, 위기 상황에 대처하는 능력이 극도로 발달해 있습니다.",
+                jobs: "엔지니어, 파일럿, 시스템 분석가, 소방관, 응급의학과 의사",
+                characters: "마블의 '블랙 위도우', 존 윅"
+            },
+            "ISFP": {
+                title: "호기심 많은 예술가, 성인군자형",
+                desc: "말없이 다정하고 온화하며 사람들에게 친절합니다. 현재의 삶을 풍부하게 즐기며 미적 감각이 뛰어납니다. 갈등을 피하려 하고 자신의 가치관을 조용히 지키는 따뜻한 자유주의자입니다.",
+                jobs: "시각 디자이너, 사진작가, 미용사, 작곡가, 동물 사육사",
+                characters: "해리 포터의 '해리 포터', 센과 치히로의 '치히로'"
+            },
+            "INFP": {
+                title: "열정적인 중재자, 잔다르크형",
+                desc: "낭만적이고 이상주의적인 성격으로 내적 신념이 매우 강합니다. 이해심이 많고 관대하며, 자신만의 상상의 세계에서 큰 가치를 찾습니다. 타인의 성장을 조용히 돕고 진심 어린 공감을 나눕니다.",
+                jobs: "소설가, 번역가, 미술 치료사, 카운셀러, 크리에이티브 디렉터",
+                characters: "반지의 제왕 '프로도 배긴스', 빨강머리 앤"
+            },
+            "INTP": {
+                title: "논리적인 사색가, 아이디어뱅크형",
+                desc: "끝없는 지적 호기심을 가진 끊임없는 사색가입니다. 비논리적인 주장이나 거짓을 기가 막히게 잡아내며, 독창적인 해결책을 제시합니다. 평범하고 반복적인 일상보다는 추상적인 이론 연구를 즐깁니다.",
+                jobs: "수학자, 물리학자, 보안 전문가, 게임 개발자, 철학가",
+                characters: "매트릭스의 '네오', 마블의 '브루스 배너 (헐크)'"
+            },
+            "ESTP": {
+                title: "모험을 즐기는 사업가, 활동가형",
+                desc: "주변에 지대한 영향을 주는 활력 넘치는 인물입니다. 이론적인 고민보다는 행동이 앞서며, 지금 당장 해결해야 하는 실질적인 문제에 탁월한 해결력을 선보입니다. 스릴과 변화를 즐깁니다.",
+                jobs: "기업가, 소방관, 영업직 대표, 경찰관, 스포츠 캐스터",
+                characters: "마블의 '토니 스타크 (아이언맨)', 토르"
+            },
+            "ESFP": {
+                title: "자유로운 영혼의 연예인, 사교형",
+                desc: "주위에 있으면 한시도 지루할 틈이 없는 흥이 넘치는 성격입니다. 타인에게 지대한 관심을 보이며 에너지가 가득합니다. 실용적이고 현실적이면서도, 사람들과 어울려 유쾌한 분위기를 주도합니다.",
+                jobs: "이벤트 기획자, 연예인, 레크리에이션 강사, 여행 가이드, 아동 복지사",
+                characters: "심슨 가족의 '호머 심슨', 겨울왕국의 '안나'"
+            },
+            "ENFP": {
+                title: "재기발랄한 활동가, 스파크형",
+                desc: "자유로운 영혼의 소유자입니다. 종종 분위기 메이커 역할을 하며, 단순한 재미를 넘어 타인과 깊은 정서적 교감을 나누는 데 깊은 가치를 둡니다. 에너지와 열정이 넘치고 아이디어가 끊이지 않습니다.",
+                jobs: "마케터, 카피라이터, 홍보 전문가, 유튜버, 상담 교사",
+                characters: "어벤져스의 '스파이더맨 (피터 파커)', 인사이드 아웃의 '기쁨이(Joy)'"
+            },
+            "ENTP": {
+                title: "뜨거운 논쟁을 즐기는 변론가, 발명가형",
+                desc: "지적인 도전을 두려워하지 않으며 늘 새로운 아이디어를 갈망합니다. 기발한 위트와 임기응변, 넓은 지식으로 상대방을 설득하거나 논박하는 과정을 아주 흥미로워합니다. 틀에 박힌 것을 제일 싫어합니다.",
+                jobs: "벤처 캐피탈리스트, 기획 광고주, 정치인, 전략 컨설턴트, 프로듀서",
+                characters: "캐리비안의 해적 '잭 스패로우', 마블의 '로키'"
+            },
+            "ESTJ": {
+                title: "엄격한 관리자, 사업가형",
+                desc: "사물과 사람을 조직하고 관리하는 데 타의 추종을 불허하는 뛰어난 재능을 가졌습니다. 규칙과 전통을 중요시하며, 정직하고 헌신적인 태도로 커뮤니티나 팀을 이끄는 리더십이 뛰어납니다.",
+                jobs: "프로젝트 매니저, 재무 책임자, 군인 장교, 판사, 비즈니스 컨설턴트",
+                characters: "해리 포터의 '헤르미온느 그레인저'"
+            },
+            "ESFJ": {
+                title: "사교적인 외교관, 친선도모형",
+                desc: "인기가 많고 타인을 잘 도우며, 인화 분위기를 조성하는 따뜻한 마음의 소유자입니다. 다른 사람들의 필요를 예리하게 알아차려 돕고, 질서와 약속을 소중히 지키며 주변 공동체를 지지합니다.",
+                jobs: "승무원, 초등학교 교사, 고객 관리 매니저, 영양사, 홍보 담당자",
+                characters: "어벤져스의 '필 콜슨', 미녀와 야수의 '벨'"
+            },
+            "ENFJ": {
+                title: "정의로운 사회운동가, 지도자형",
+                desc: "카리스마와 열정을 지닌 타고난 리더입니다. 다른 사람들을 격려하고 이끌어 가며, 더 밝은 공동체를 이룩하기 위해 앞장섭니다. 공감 능력이 비정상적으로 높을 만큼 훌륭하며 타인을 돕는 일에 헌신적입니다.",
+                jobs: "정치 리더, 교사, 인적 자원 매니저, 홍보 디렉터, 코치",
+                characters: "반지의 제왕 '아라곤', 매트릭스의 '모피어스'"
+            },
+            "ENTJ": {
+                title: "대담한 통솔자, 지도자형",
+                desc: "자신감과 카리스마가 넘치며 목표 달성을 위해 사람들을 규합하는 통솔력을 가지고 있습니다. 이성적이고 장기적인 비전을 설정하여 비효율적인 시스템을 과감히 개혁하는 강인한 성격의 리더입니다.",
+                jobs: "CEO, 경영 컨설턴트, 벤처 투자가, 변호사, 벤처 창업자",
+                characters: "마블의 '닉 퓨리', 스타워즈의 '다스 베이더'"
+            }
+        };
+
+        // State variables
+        let currentQuestionIdx = 0;
+        let sessionQuestions = []; // Stores finalized options sequence per session
+        let userAnswers = []; // Directly stores selected dimension values ('E', 'I', 'S', etc.)
+
+        // Start Test & Pre-Randomize Options Layout
+        function startTest() {
+            // Decouple options layout order - KEEPING FIXED LAYOUT (Option A "네" is ALWAYS index 0, Option B "아니오" is ALWAYS index 1)
+            sessionQuestions = masterQuestions.map(q => {
+                const opts = [
+                    { text: q.options.A.text, val: q.options.A.val },
+                    { text: q.options.B.text, val: q.options.B.val }
+                ];
+                
+                // Random swap logic has been entirely removed here.
+                // Output sequence is guaranteed to place "네" as the first button and "아니오" as the second button.
+
+                return {
+                    text: q.text,
+                    dim: q.dim,
+                    options: opts
+                };
+            });
+
+            currentQuestionIdx = 0;
+            userAnswers = [];
+
+            document.getElementById('start-view').classList.add('hidden');
+            document.getElementById('test-view').classList.remove('hidden');
+            document.getElementById('test-view').classList.add('flex');
+            showQuestion();
+        }
+
+        // Custom Toast Notification function
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function showQuestion() {
+            const q = sessionQuestions[currentQuestionIdx];
+            
+            document.getElementById('question-category').innerText = "성향 분석 질문";
+            document.getElementById('question-text').innerText = `${currentQuestionIdx + 1}. ${q.text}`;
+            
+            // Set dynamic options ("네" / "아니오" which are now strictly fixed)
+            const opt1 = q.options[0];
+            const opt2 = q.options[1];
+
+            document.getElementById('option-1-text').innerText = opt1.text;
+            document.getElementById('option-1-btn').onclick = () => selectOption(opt1.val);
+
+            document.getElementById('option-2-text').innerText = opt2.text;
+            document.getElementById('option-2-btn').onclick = () => selectOption(opt2.val);
+            
+            // Update progress
+            const progressPercent = ((currentQuestionIdx + 1) / sessionQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+            document.getElementById('progress-text').innerText = `${currentQuestionIdx + 1} / ${sessionQuestions.length}`;
+
+            // Control Prev Button
+            document.getElementById('prev-btn').disabled = currentQuestionIdx === 0;
+        }
+
+        function selectOption(selectedVal) {
+            // Save direct value ('E', 'I', 'S', etc.) for strict decoupled logic
+            userAnswers[currentQuestionIdx] = selectedVal;
+
+            // Move to next question or end
+            if (currentQuestionIdx < sessionQuestions.length - 1) {
+                currentQuestionIdx++;
+                showQuestion();
+            } else {
+                calculateResult();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIdx > 0) {
+                currentQuestionIdx--;
+                showQuestion();
+            }
+        }
+
+        function calculateResult() {
+            // Show Loading Screen
+            document.getElementById('test-view').classList.remove('flex');
+            document.getElementById('test-view').classList.add('hidden');
+            document.getElementById('loading-view').classList.remove('hidden');
+            document.getElementById('loading-view').classList.add('flex');
+
+            // Simulate calculation with slight delay for realistic UX
+            setTimeout(() => {
+                // Dimensional Counters
+                let scores = {
+                    E: 0, I: 0,
+                    S: 0, N: 0,
+                    T: 0, F: 0,
+                    J: 0, P: 0
+                };
+
+                // Accumulate Scores directly from saved dimension choices
+                for (let i = 0; i < sessionQuestions.length; i++) {
+                    const chosenVal = userAnswers[i]; // 'E', 'I', etc.
+                    scores[chosenVal]++;
+                }
+
+                // Determine Percentages (6 questions per dimension, so max score is 6)
+                const pctE = Math.round((scores.E / 6) * 100);
+                const pctI = 100 - pctE;
+
+                const pctS = Math.round((scores.S / 6) * 100);
+                const pctN = 100 - pctS;
+
+                const pctT = Math.round((scores.T / 6) * 100);
+                const pctF = 100 - pctT;
+
+                const pctJ = Math.round((scores.J / 6) * 100);
+                const pctP = 100 - pctJ;
+
+                // Form final MBTI String
+                const resultMBTI = 
+                    (pctE >= 50 ? "E" : "I") +
+                    (pctS >= 50 ? "S" : "N") +
+                    (pctT >= 50 ? "T" : "F") +
+                    (pctJ >= 50 ? "J" : "P");
+
+                // Render Results
+                const data = mbtiData[resultMBTI];
+                document.getElementById('result-type').innerText = resultMBTI;
+                document.getElementById('result-title').innerText = data.title;
+                document.getElementById('result-desc').innerText = data.desc;
+                document.getElementById('result-jobs').innerText = data.jobs;
+                document.getElementById('result-characters').innerText = data.characters;
+
+                // Set Percentage Bars
+                document.getElementById('bar-e').style.width = `${pctE}%`;
+                document.getElementById('bar-i').style.width = `${pctI}%`;
+                document.getElementById('percent-e').innerText = `${pctE}%`;
+                document.getElementById('percent-i').innerText = `${pctI}%`;
+
+                document.getElementById('bar-s').style.width = `${pctS}%`;
+                document.getElementById('bar-n').style.width = `${pctN}%`;
+                document.getElementById('percent-s').innerText = `${pctS}%`;
+                document.getElementById('percent-n').innerText = `${pctN}%`;
+
+                document.getElementById('bar-t').style.width = `${pctT}%`;
+                document.getElementById('bar-f').style.width = `${pctF}%`;
+                document.getElementById('percent-t').innerText = `${pctT}%`;
+                document.getElementById('percent-f').innerText = `${pctF}%`;
+
+                document.getElementById('bar-j').style.width = `${pctJ}%`;
+                document.getElementById('bar-p').style.width = `${pctP}%`;
+                document.getElementById('percent-j').innerText = `${pctJ}%`;
+                document.getElementById('percent-p').innerText = `${pctP}%`;
+
+                // Switch Views
+                document.getElementById('loading-view').classList.remove('flex');
+                document.getElementById('loading-view').classList.add('hidden');
+                document.getElementById('result-view').classList.remove('hidden');
+                document.getElementById('result-view').classList.add('flex');
+            }, 2000);
+        }
+
+        function resetTest() {
+            currentQuestionIdx = 0;
+            userAnswers = [];
+            sessionQuestions = [];
+            
+            // Reset Views to initial
+            document.getElementById('result-view').classList.remove('flex');
+            document.getElementById('result-view').classList.add('hidden');
+            document.getElementById('test-view').classList.remove('flex');
+            document.getElementById('test-view').classList.add('hidden');
+            document.getElementById('loading-view').classList.remove('flex');
+            document.getElementById('loading-view').classList.add('hidden');
+            
+            document.getElementById('start-view').classList.remove('hidden');
+        }
+
+        // Clip board sharing fallback implementation
+        function shareResult() {
+            const mbti = document.getElementById('result-type').innerText;
+            const title = document.getElementById('result-title').innerText;
+            const textToCopy = `나의 MBTI 분석 결과는? [${mbti} - ${title}] 입니다! 지금 여러분도 테스트해보세요!`;
+            
+            // Setup text element for execCommand copy
+            const tempInput = document.createElement("textarea");
+            tempInput.value = textToCopy;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand("copy");
+                showToast("결과 텍스트가 클립보드에 복사되었습니다! 🎉");
+            } catch (err) {
+                console.error("클립보드 복사 실패:", err);
+                showToast("복사에 실패했습니다. 직접 복사해주세요.");
+            } finally {
+                document.body.removeChild(tempInput);
+            }
+        }
+    </script>
+</body>
+</html>
